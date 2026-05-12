@@ -99,7 +99,7 @@ public class Game implements IGame {
       if (players.get(currentPlayer).inPenaltyBox) {
          return handlePenaltyBoxBranch(isGettingOutOfPenaltyBox);
       } else {
-         addGoldCoin("Answer was corrent!!!!"); // <--- Con 'n'
+         addGoldCoin("Answer was correct!!!!"); 
          boolean winner = isGameStillGoing();
          nextPlayer();  
          return winner;
