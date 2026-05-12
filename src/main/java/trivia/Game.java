@@ -12,21 +12,11 @@ public class Game implements IGame {
 
    ArrayList<Player> players = new ArrayList<>();   
 
-   LinkedList popQuestions = new LinkedList();
-   LinkedList scienceQuestions = new LinkedList();
-   LinkedList sportsQuestions = new LinkedList();
-   LinkedList rockQuestions = new LinkedList();
-
+   private QuestionDeck deck = new QuestionDeck();
    int currentPlayer = 0;
    boolean isGettingOutOfPenaltyBox;
 
    public Game() {
-      for (int i = 0; i < 50; i++) {
-         popQuestions.addLast("Pop Question " + i);
-         scienceQuestions.addLast(("Science Question " + i));
-         sportsQuestions.addLast(("Sports Question " + i));
-         rockQuestions.addLast(createRockQuestion(i));
-      }
    }
 
    public String createRockQuestion(int index) {
@@ -51,43 +41,37 @@ public class Game implements IGame {
 
    public void roll(int roll) {
       Player current = players.get(currentPlayer);
-
       announce(current.name + " is the current player");
       announce("They have rolled a " + roll);
 
       if (current.inPenaltyBox) {
-         if (isOdd(roll)) {
-               isGettingOutOfPenaltyBox = true;
-               announce(current.name + " is getting out of the penalty box");
-
-               current.advance(roll, BOARD_SIZE);
-
-               announce(current.name + "'s new location is " + current.position);
-               announce("The category is " + currentCategory(current.position));
-               askQuestion();
-         } else {
-               announce(current.name + " is not getting out of the penalty box");
-               isGettingOutOfPenaltyBox = false;
-         }
-
+         handlePenaltyBoxTurn(current, roll);
       } else {
-         current.advance(roll, BOARD_SIZE);
+         handleNormalTurn(current, roll);
+      }
+   }
 
-         announce(current.name + "'s new location is " + current.position);
-         announce("The category is " + currentCategory(current.position));
-         askQuestion();
+   private void handleNormalTurn(Player player, int roll) {
+      player.advance(roll, BOARD_SIZE);
+      announce(player.name + "'s new location is " + player.position);
+      announce("The category is " + currentCategory(player.position));
+      askQuestion();
+   }
+
+   private void handlePenaltyBoxTurn(Player player, int roll) {
+      if (isOdd(roll)) {
+         isGettingOutOfPenaltyBox = true;
+         announce(player.name + " is getting out of the penalty box");
+         handleNormalTurn(player, roll); // Una vez que sale, se mueve como un turno normal
+      } else {
+         announce(player.name + " is not getting out of the penalty box");
+         isGettingOutOfPenaltyBox = false;
       }
    }
 
    private void askQuestion() {
-      if (currentCategory(players.get(currentPlayer).position) == "Pop")
-         announce(popQuestions.removeFirst());
-      if (currentCategory(players.get(currentPlayer).position) == "Science")
-         announce(scienceQuestions.removeFirst());
-      if (currentCategory(players.get(currentPlayer).position) == "Sports")
-         announce(sportsQuestions.removeFirst());
-      if (currentCategory(players.get(currentPlayer).position) == "Rock")
-         announce(rockQuestions.removeFirst());
+      String category = currentCategory(players.get(currentPlayer).position);
+      announce(deck.drawQuestion(category));
    }
 
 
@@ -205,3 +189,28 @@ class Player {
       }
    }
 }
+
+class QuestionDeck {
+   private LinkedList<String> popQuestions = new LinkedList<>();
+   private LinkedList<String> scienceQuestions = new LinkedList<>();
+   private LinkedList<String> sportsQuestions = new LinkedList<>();
+   private LinkedList<String> rockQuestions = new LinkedList<>();
+
+   public QuestionDeck() {
+      for (int i = 0; i < 50; i++) {
+         popQuestions.addLast("Pop Question " + i);
+         scienceQuestions.addLast("Science Question " + i);
+         sportsQuestions.addLast("Sports Question " + i);
+         rockQuestions.addLast("Rock Question " + i);
+      }
+   }
+
+   public String drawQuestion(String category) {
+      if (category.equals("Pop")) return popQuestions.removeFirst();
+      if (category.equals("Science")) return scienceQuestions.removeFirst();
+      if (category.equals("Sports")) return sportsQuestions.removeFirst();
+      if (category.equals("Rock")) return rockQuestions.removeFirst();
+      return "Unknown Category";
+   }
+}
+
