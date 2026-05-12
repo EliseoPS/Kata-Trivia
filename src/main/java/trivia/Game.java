@@ -10,10 +10,7 @@ public class Game implements IGame {
    private static final int BOARD_SIZE = 12;
    private static final int WINNING_COINS = 6;
 
-   ArrayList players = new ArrayList();
-   int[] playerPositions = new int[WINNING_COINS];
-   int[] playerGoldCoins = new int[WINNING_COINS];
-   boolean[] playersInPenaltyBox = new boolean[WINNING_COINS];
+   ArrayList<Player> players = new ArrayList<>();   
 
    LinkedList popQuestions = new LinkedList();
    LinkedList scienceQuestions = new LinkedList();
@@ -41,10 +38,7 @@ public class Game implements IGame {
    }
 
    public boolean add(String playerName) {
-      playerPositions[howManyPlayers()] = 1;
-      playerGoldCoins[howManyPlayers()] = 0;
-      playersInPenaltyBox[howManyPlayers()] = false;
-      players.add(playerName);
+      players.add(new Player(playerName));
 
       System.out.println(playerName + " was added");
       System.out.println("They are player number " + players.size());
@@ -56,63 +50,57 @@ public class Game implements IGame {
    }
 
    public void roll(int roll) {
-      System.out.println(players.get(currentPlayer) + " is the current player");
-      System.out.println("They have rolled a " + roll);
+      Player current = players.get(currentPlayer);
 
-      if (playersInPenaltyBox[currentPlayer]) {
+      announce(current.name + " is the current player");
+      announce("They have rolled a " + roll);
+
+      if (current.inPenaltyBox) {
          if (isOdd(roll)) {
-            isGettingOutOfPenaltyBox = true;
+               isGettingOutOfPenaltyBox = true;
+               announce(current.name + " is getting out of the penalty box");
 
-            System.out.println(players.get(currentPlayer) + " is getting out of the penalty box");
-            playerPositions[currentPlayer] = playerPositions[currentPlayer] + roll;
-            if (playerPositions[currentPlayer] > BOARD_SIZE) playerPositions[currentPlayer] = playerPositions[currentPlayer] - 12;
+               current.advance(roll, BOARD_SIZE);
 
-            System.out.println(players.get(currentPlayer)
-                               + "'s new location is "
-                               + playerPositions[currentPlayer]);
-            System.out.println("The category is " + currentCategory(playerPositions[currentPlayer]));
-            askQuestion();
+               announce(current.name + "'s new location is " + current.position);
+               announce("The category is " + currentCategory(current.position));
+               askQuestion();
          } else {
-            System.out.println(players.get(currentPlayer) + " is not getting out of the penalty box");
-            isGettingOutOfPenaltyBox = false;
+               announce(current.name + " is not getting out of the penalty box");
+               isGettingOutOfPenaltyBox = false;
          }
 
       } else {
+         current.advance(roll, BOARD_SIZE);
 
-         playerPositions[currentPlayer] = playerPositions[currentPlayer] + roll;
-         if (playerPositions[currentPlayer] > BOARD_SIZE) playerPositions[currentPlayer] = playerPositions[currentPlayer] - BOARD_SIZE;
-
-         System.out.println(players.get(currentPlayer)
-                            + "'s new location is "
-                            + playerPositions[currentPlayer]);
-         System.out.println("The category is " + currentCategory(playerPositions[currentPlayer]));
+         announce(current.name + "'s new location is " + current.position);
+         announce("The category is " + currentCategory(current.position));
          askQuestion();
       }
-
    }
 
    private void askQuestion() {
-      if (currentCategory(playerPositions[currentPlayer]) == "Pop")
+      if (currentCategory(players.get(currentPlayer).position) == "Pop")
          announce(popQuestions.removeFirst());
-      if (currentCategory(playerPositions[currentPlayer]) == "Science")
+      if (currentCategory(players.get(currentPlayer).position) == "Science")
          announce(scienceQuestions.removeFirst());
-      if (currentCategory(playerPositions[currentPlayer]) == "Sports")
+      if (currentCategory(players.get(currentPlayer).position) == "Sports")
          announce(sportsQuestions.removeFirst());
-      if (currentCategory(playerPositions[currentPlayer]) == "Rock")
+      if (currentCategory(players.get(currentPlayer).position) == "Rock")
          announce(rockQuestions.removeFirst());
    }
 
 
    // private String currentCategory() {
-   //    if (playerPositions[currentPlayer] - 1 == 0) return "Pop";
-   //    if (playerPositions[currentPlayer] - 1 == 4) return "Pop";
-   //    if (playerPositions[currentPlayer] - 1 == 8) return "Pop";
-   //    if (playerPositions[currentPlayer] - 1 == 1) return "Science";
-   //    if (playerPositions[currentPlayer] - 1 == 5) return "Science";
-   //    if (playerPositions[currentPlayer] - 1 == 9) return "Science";
-   //    if (playerPositions[currentPlayer] - 1 == 2) return "Sports";
-   //    if (playerPositions[currentPlayer] - 1 == 6) return "Sports";
-   //    if (playerPositions[currentPlayer] - 1 == 10) return "Sports";
+   //    if (players.get(currentPlayer).position - 1 == 0) return "Pop";
+   //    if (players.get(currentPlayer).position - 1 == 4) return "Pop";
+   //    if (players.get(currentPlayer).position - 1 == 8) return "Pop";
+   //    if (players.get(currentPlayer).position - 1 == 1) return "Science";
+   //    if (players.get(currentPlayer).position - 1 == 5) return "Science";
+   //    if (players.get(currentPlayer).position - 1 == 9) return "Science";
+   //    if (players.get(currentPlayer).position - 1 == 2) return "Sports";
+   //    if (players.get(currentPlayer).position - 1 == 6) return "Sports";
+   //    if (players.get(currentPlayer).position - 1 == 10) return "Sports";
    //    return "Rock";
    // }
 
@@ -124,7 +112,7 @@ public class Game implements IGame {
    }
 
    public boolean handleCorrectAnswer() {
-      if (playersInPenaltyBox[currentPlayer]) {
+      if (players.get(currentPlayer).inPenaltyBox) {
          return handlePenaltyBoxBranch(isGettingOutOfPenaltyBox);
       } else {
          addGoldCoin("Answer was corrent!!!!"); // <--- Con 'n'
@@ -136,8 +124,8 @@ public class Game implements IGame {
 
    public boolean wrongAnswer() {
       System.out.println("Question was incorrectly answered");
-      System.out.println(players.get(currentPlayer) + " was sent to the penalty box");
-      playersInPenaltyBox[currentPlayer] = true;
+      System.out.println(players.get(currentPlayer).name + " was sent to the penalty box");
+      players.get(currentPlayer).sendToPenaltyBox();
 
       nextPlayer(); // <--- Mucho más limpio que las 2 líneas de antes
       return true;
@@ -157,7 +145,7 @@ public class Game implements IGame {
    }
 
    private boolean didPlayerWin() {
-      return playerGoldCoins[currentPlayer] == WINNING_COINS;
+      return players.get(currentPlayer).hasWon(WINNING_COINS);
    }
 
    private boolean handlePenaltyBoxBranch(boolean isGettingOut) {
@@ -179,11 +167,41 @@ public class Game implements IGame {
 
    private void addGoldCoin(String message) {
       announce(message); 
-      playerGoldCoins[currentPlayer]++;
-      announce(players.get(currentPlayer) 
+      players.get(currentPlayer).addCoin();
+      announce(players.get(currentPlayer).name 
          + " now has " 
-         + playerGoldCoins[currentPlayer] 
+         + players.get(currentPlayer).coins 
          + " Gold Coins.");
    }
 
+}
+
+class Player {
+   final String name;
+   int position = 1; 
+   int coins = 0;
+   boolean inPenaltyBox = false;
+
+   Player(String name) { this.name = name; }
+
+
+
+   public void addCoin() {
+      this.coins++;
+   }
+
+   public void sendToPenaltyBox() {
+      this.inPenaltyBox = true;
+   }
+
+   public boolean hasWon(int winningCoins) {
+      return this.coins == winningCoins;
+   }
+
+   public void advance(int roll, int boardSize) {
+      this.position = this.position + roll;
+      if (this.position > boardSize) {
+         this.position = this.position - 12; 
+      }
+   }
 }
