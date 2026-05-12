@@ -9,6 +9,7 @@ import java.util.LinkedList;
 public class Game implements IGame {
    private static final int BOARD_SIZE = 12;
    private static final int WINNING_COINS = 6;
+   private static final int MAX_PLAYERS = 6;
 
    ArrayList<Player> players = new ArrayList<>();   
 
@@ -27,10 +28,16 @@ public class Game implements IGame {
    }
 
    public boolean add(String playerName) {
+      // Verificamos si ya llegamos al límite
+      if (howManyPlayers() == MAX_PLAYERS) {
+         announce("Cannot add " + playerName + ". Game is full (Max " + MAX_PLAYERS + " players).");
+         return false;
+      }
+
       players.add(new Player(playerName));
 
-      System.out.println(playerName + " was added");
-      System.out.println("They are player number " + players.size());
+      announce(playerName + " was added");
+      announce("They are player number " + players.size());
       return true;
    }
 
