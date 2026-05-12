@@ -3,12 +3,17 @@ package trivia;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
+
+
 // REFACTOR ME
 public class Game implements IGame {
+   private static final int BOARD_SIZE = 12;
+   private static final int WINNING_COINS = 6;
+
    ArrayList players = new ArrayList();
-   int[] playerPositions = new int[6];
-   int[] playerGoldCoins = new int[6];
-   boolean[] playersInPenaltyBox = new boolean[6];
+   int[] playerPositions = new int[WINNING_COINS];
+   int[] playerGoldCoins = new int[WINNING_COINS];
+   boolean[] playersInPenaltyBox = new boolean[WINNING_COINS];
 
    LinkedList popQuestions = new LinkedList();
    LinkedList scienceQuestions = new LinkedList();
@@ -60,7 +65,7 @@ public class Game implements IGame {
 
             System.out.println(players.get(currentPlayer) + " is getting out of the penalty box");
             playerPositions[currentPlayer] = playerPositions[currentPlayer] + roll;
-            if (playerPositions[currentPlayer] > 12) playerPositions[currentPlayer] = playerPositions[currentPlayer] - 12;
+            if (playerPositions[currentPlayer] > BOARD_SIZE) playerPositions[currentPlayer] = playerPositions[currentPlayer] - 12;
 
             System.out.println(players.get(currentPlayer)
                                + "'s new location is "
@@ -75,7 +80,7 @@ public class Game implements IGame {
       } else {
 
          playerPositions[currentPlayer] = playerPositions[currentPlayer] + roll;
-         if (playerPositions[currentPlayer] > 12) playerPositions[currentPlayer] = playerPositions[currentPlayer] - 12;
+         if (playerPositions[currentPlayer] > BOARD_SIZE) playerPositions[currentPlayer] = playerPositions[currentPlayer] - BOARD_SIZE;
 
          System.out.println(players.get(currentPlayer)
                             + "'s new location is "
@@ -162,6 +167,6 @@ public class Game implements IGame {
 
 
    private boolean isGameStillGoing() {
-      return !(playerGoldCoins[currentPlayer] == 6);
+      return !(playerGoldCoins[currentPlayer] == WINNING_COINS);
    }
 }
