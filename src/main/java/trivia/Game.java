@@ -14,7 +14,6 @@ public class Game implements IGame {
 
    private QuestionDeck deck = new QuestionDeck();
    int currentPlayer = 0;
-   boolean isGettingOutOfPenaltyBox;
 
    public Game() {
    }
@@ -60,12 +59,12 @@ public class Game implements IGame {
 
    private void handlePenaltyBoxTurn(Player player, int roll) {
       if (isOdd(roll)) {
-         isGettingOutOfPenaltyBox = true;
+         player.isGettingOut = true;
          announce(player.name + " is getting out of the penalty box");
-         handleNormalTurn(player, roll); // Una vez que sale, se mueve como un turno normal
+         handleNormalTurn(player, roll); 
       } else {
          announce(player.name + " is not getting out of the penalty box");
-         isGettingOutOfPenaltyBox = false;
+         player.isGettingOut = false;
       }
    }
 
@@ -96,8 +95,9 @@ public class Game implements IGame {
    }
 
    public boolean handleCorrectAnswer() {
+      Player current = players.get(currentPlayer);
       if (players.get(currentPlayer).inPenaltyBox) {
-         return handlePenaltyBoxBranch(isGettingOutOfPenaltyBox);
+         return handlePenaltyBoxBranch(current.isGettingOut);
       } else {
          addGoldCoin("Answer was correct!!!!"); 
          boolean winner = isGameStillGoing();
@@ -165,6 +165,7 @@ class Player {
    int position = 1; 
    int coins = 0;
    boolean inPenaltyBox = false;
+   boolean isGettingOut = false;
 
    Player(String name) { this.name = name; }
 
