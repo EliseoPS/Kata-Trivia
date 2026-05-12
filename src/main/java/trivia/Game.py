@@ -1,132 +1,141 @@
 from collections import deque
-from IGame import IGame
 
-class Game(IGame):
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.position = 1
+        self.coins = 0
+        self.in_penalty_box = False
+        self.is_getting_out = False
+
+    def add_coin(self):
+        self.coins += 1
+
+    def send_to_penalty_box(self):
+        self.in_penalty_box = True
+
+    def has_won(self, winning_coins):
+        return self.coins == winning_coins
+
+    def advance(self, roll, board_size):
+        self.position += roll
+        if self.position > board_size:
+            self.position -= 12
+
+class QuestionDeck:
+    def __init__(self):
+        self.pop_questions = deque([f"Pop Question {i}" for i in range(50)])
+        self.science_questions = deque([f"Science Question {i}" for i in range(50)])
+        self.sports_questions = deque([f"Sports Question {i}" for i in range(50)])
+        self.rock_questions = deque([f"Rock Question {i}" for i in range(50)])
+
+    def draw_question(self, category):
+        if category == "Pop": return self.pop_questions.popleft()
+        if category == "Science": return self.science_questions.popleft()
+        if category == "Sports": return self.sports_questions.popleft()
+        if category == "Rock": return self.rock_questions.popleft()
+        return "Unknown Category"
+
+class Game:
+    BOARD_SIZE = 12
+    WINNING_COINS = 6
+    MAX_PLAYERS = 6
+
     def __init__(self):
         self.players = []
-        self.places = [0] * 6
-        self.purses = [0] * 6
-        self.in_penalty_box = [False] * 6
+        self.deck = QuestionDeck()
+        self.current_player_idx = 0
 
-        self.pop_questions = deque()
-        self.science_questions = deque()
-        self.sports_questions = deque()
-        self.rock_questions = deque()
-
-        self.current_player = 0
-        self.is_getting_out_of_penalty_box = False
-
-        for i in range(50):
-            self.pop_questions.append(f"Pop Question {i}")
-            self.science_questions.append(f"Science Question {i}")
-            self.sports_questions.append(f"Sports Question {i}")
-            self.rock_questions.append(self.create_rock_question(i))
-
-    def create_rock_question(self, index):
-        return f"Rock Question {index}"
-
-    def is_playable(self):
-        return self.how_many_players() >= 2
+    @property
+    def current_player(self):
+        return self.players[self.current_player_idx]
 
     def add(self, player_name):
-        self.places[self.how_many_players()] = 1
-        self.purses[self.how_many_players()] = 0
-        self.in_penalty_box[self.how_many_players()] = False
-        self.players.append(player_name)
+        if len(self.players) == self.MAX_PLAYERS:
+            self.announce(f"Cannot add {player_name}. Game is full (Max {self.MAX_PLAYERS} players).")
+            return False
 
-        print(f"{player_name} was added")
-        print(f"They are player number {len(self.players)}")
+        self.players.append(Player(player_name))
+        self.announce(f"{player_name} was added")
+        self.announce(f"They are player number {len(self.players)}")
         return True
 
-    def how_many_players(self):
-        return len(self.players)
+    def roll(self, roll_value):
+        player = self.current_player
+        self.announce(f"{player.name} is the current player")
+        self.announce(f"They have rolled a {roll_value}")
 
-    def roll(self, roll):
-        print(f"{self.players[self.current_player]} is the current player")
-        print(f"They have rolled a {roll}")
-
-        if self.in_penalty_box[self.current_player]:
-            if roll % 2 != 0:
-                self.is_getting_out_of_penalty_box = True
-
-                print(f"{self.players[self.current_player]} is getting out of the penalty box")
-                self.places[self.current_player] = self.places[self.current_player] + roll
-                if self.places[self.current_player] > 12:
-                    self.places[self.current_player] = self.places[self.current_player] - 12
-
-                print(f"{self.players[self.current_player]}'s new location is {self.places[self.current_player]}")
-                print(f"The category is {self._current_category()}")
-                self._ask_question()
-            else:
-                print(f"{self.players[self.current_player]} is not getting out of the penalty box")
-                self.is_getting_out_of_penalty_box = False
+        if player.in_penalty_box:
+            self.handle_penalty_box_turn(player, roll_value)
         else:
-            self.places[self.current_player] = self.places[self.current_player] + roll
-            if self.places[self.current_player] > 12:
-                self.places[self.current_player] = self.places[self.current_player] - 12
+            self.handle_normal_turn(player, roll_value)
 
-            print(f"{self.players[self.current_player]}'s new location is {self.places[self.current_player]}")
-            print(f"The category is {self._current_category()}")
-            self._ask_question()
+    def handle_normal_turn(self, player, roll_value):
+        player.advance(roll_value, self.BOARD_SIZE)
+        self.announce(f"{player.name}'s new location is {player.position}")
+        self.announce(f"The category is {self.current_category(player.position)}")
+        self.ask_question()
 
-    def _ask_question(self):
-        if self._current_category() == "Pop":
-            print(self.pop_questions.popleft())
-        if self._current_category() == "Science":
-            print(self.science_questions.popleft())
-        if self._current_category() == "Sports":
-            print(self.sports_questions.popleft())
-        if self._current_category() == "Rock":
-            print(self.rock_questions.popleft())
+    def handle_penalty_box_turn(self, player, roll_value):
+        if roll_value % 2 != 0:
+            player.is_getting_out = True
+            self.announce(f"{player.name} is getting out of the penalty box")
+            self.handle_normal_turn(player, roll_value)
+        else:
+            self.announce(f"{player.name} is not getting out of the penalty box")
+            player.is_getting_out = False
 
-    def _current_category(self):
-        if self.places[self.current_player] - 1 == 0: return "Pop"
-        if self.places[self.current_player] - 1 == 4: return "Pop"
-        if self.places[self.current_player] - 1 == 8: return "Pop"
-        if self.places[self.current_player] - 1 == 1: return "Science"
-        if self.places[self.current_player] - 1 == 5: return "Science"
-        if self.places[self.current_player] - 1 == 9: return "Science"
-        if self.places[self.current_player] - 1 == 2: return "Sports"
-        if self.places[self.current_player] - 1 == 6: return "Sports"
-        if self.places[self.current_player] - 1 == 10: return "Sports"
+    def ask_question(self):
+        category = self.current_category(self.current_player.position)
+        self.announce(self.deck.draw_question(category))
+
+    def current_category(self, position):
+        if position in [1, 5, 9]: return "Pop"
+        if position in [2, 6, 10]: return "Science"
+        if position in [3, 7, 11]: return "Sports"
         return "Rock"
 
     def handle_correct_answer(self):
-        if self.in_penalty_box[self.current_player]:
-            if self.is_getting_out_of_penalty_box:
-                print("Answer was correct!!!!")
-                self.purses[self.current_player] += 1
-                print(f"{self.players[self.current_player]} now has {self.purses[self.current_player]} Gold Coins.")
-
-                winner = self._did_player_win()
-                self.current_player += 1
-                if self.current_player == len(self.players): self.current_player = 0
-
-                return winner
-            else:
-                self.current_player += 1
-                if self.current_player == len(self.players): self.current_player = 0
-                return True
+        player = self.current_player
+        if player.in_penalty_box:
+            return self.handle_penalty_box_branch(player.is_getting_out)
         else:
-            # Nota: El código original tiene el error ortográfico "corrent" en este bloque específico
-            print("Answer was corrent!!!!") 
-            self.purses[self.current_player] += 1
-            print(f"{self.players[self.current_player]} now has {self.purses[self.current_player]} Gold Coins.")
-
-            winner = self._did_player_win()
-            self.current_player += 1
-            if self.current_player == len(self.players): self.current_player = 0
-
-            return winner
+            self.add_gold_coin("Answer was correct!!!!")
+            still_going = not self.did_player_win()
+            self.next_player()
+            return still_going
 
     def wrong_answer(self):
+        player = self.current_player
         print("Question was incorrectly answered")
-        print(f"{self.players[self.current_player]} was sent to the penalty box")
-        self.in_penalty_box[self.current_player] = True
-
-        self.current_player += 1
-        if self.current_player == len(self.players): self.current_player = 0
+        print(f"{player.name} was sent to the penalty box")
+        player.send_to_penalty_box()
+        self.next_player()
         return True
 
-    def _did_player_win(self):
-        return not (self.purses[self.current_player] == 6)
+    def did_player_win(self):
+        return self.current_player.has_won(self.WINNING_COINS)
+
+    def handle_penalty_box_branch(self, is_getting_out):
+        if is_getting_out:
+            self.add_gold_coin("Answer was correct!!!!")
+            still_going = not self.did_player_win()
+            self.next_player()
+            return still_going
+        else:
+            self.next_player()
+            return True
+
+    def next_player(self):
+        self.current_player_idx += 1
+        if self.current_player_idx == len(self.players):
+            self.current_player_idx = 0
+
+    def add_gold_coin(self, message):
+        player = self.current_player
+        self.announce(message)
+        player.add_coin()
+        self.announce(f"{player.name} now has {player.coins} Gold Coins.")
+
+    def announce(self, message):
+        print(message)
